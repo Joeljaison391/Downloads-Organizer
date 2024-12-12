@@ -1,0 +1,19 @@
+[package]
+name = "downloadManager"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sysinfo = "0.28"
+notify = "5.0"
+dirs = "4.0"
+chrono = "0.4"
+notify-rust = "4.5"
+
+[[bin]]
+name = "downloadManager"
+path = "src/main.rs"
+
+[[bin]]
+name = "benchmark"
+path = "src/benchmark.rs"
