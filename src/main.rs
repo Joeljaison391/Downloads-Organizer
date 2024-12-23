@@ -11,7 +11,11 @@ use chrono::{Local, Duration, Datelike};
 use report::generate_html_report;
 
 fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let downloads_folder = dirs::download_dir().expect("Failed to locate Downloads folder");
+    let downloads_folder = dirs::download_dir().unwrap_or_else(|| {
+        let fallback = std::env::current_dir().expect("Failed to get current directory").join("Downloads");
+        std::fs::create_dir_all(&fallback).expect("Failed to create fallback Downloads directory");
+        fallback
+    });
     let unused_folder = downloads_folder.join("Unused");
     let report_file = downloads_folder.join("Weekly_Report.html");
     let report_status_file = downloads_folder.join("report_status.txt");
@@ -32,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         e
     })?;
 
-    // Watch all subdirectories inside the downloads folder except the unused folder
+
     watcher.watch(&downloads_folder, RecursiveMode::Recursive).map_err(|e| {
         eprintln!("Error watching folder: {}", e);
         e
@@ -66,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
         }
 
-        // Perform periodic scan for unused files every 60 seconds
+
         if elapsed >= 60 {
             println!("Starting periodic scan for unused files...");
             log_event("Starting periodic scan for unused files...");
