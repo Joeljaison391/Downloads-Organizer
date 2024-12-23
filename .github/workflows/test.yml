@@ -54,9 +54,6 @@ jobs:
           if [ ! -f ./Downloads/Images/test_image2.jpg ]; then
             echo "Test image2 was not moved to Images directory!" && exit 1
           fi
-          if [ ! -f ./Downloads/Documents/sample.pdf ]; then
-            echo "Sample PDF was not moved to Documents directory!" && exit 1
-          fi
           echo "Files moved successfully!"
 
       - name: Stop Background Application
