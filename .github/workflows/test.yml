@@ -22,7 +22,7 @@ jobs:
           override: true
 
       - name: Install Dependencies
-        run: sudo apt-get install -y wget ffmpeg
+        run: sudo apt-get install -y wget
 
       - name: Create Downloads Directory
         run: |
@@ -41,18 +41,25 @@ jobs:
 
       - name: Download Test Files
         run: |
-          wget -P ./Downloads https://via.placeholder.com/150 -O ./Downloads/test_image.jpg
-          echo "Generating test video file..."
-          ffmpeg -f lavfi -i testsrc=duration=10:size=1280x720:rate=30 ./Downloads/test_video.mp4
-          echo "Test files downloaded and generated."
+          wget -P ./Downloads https://via.placeholder.com/150 -O ./Downloads/test_image1.jpg
+          wget -P ./Downloads https://via.placeholder.com/200 -O ./Downloads/test_image2.jpg
+          echo "Sample text file" > ./Downloads/sample.txt
+          wget -P ./Downloads https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf -O ./Downloads/sample.pdf
+          echo "Test files downloaded and created."
 
       - name: Verify Files Moved
         run: |
-          if [ ! -f ./Downloads/Images/test_image.jpg ]; then
-            echo "Test image was not moved to Images directory!" && exit 1
+          if [ ! -f ./Downloads/Images/test_image1.jpg ]; then
+            echo "Test image1 was not moved to Images directory!" && exit 1
           fi
-          if [ ! -f ./Downloads/Videos/test_video.mp4 ]; then
-            echo "Test video was not moved to Videos directory!" && exit 1
+          if [ ! -f ./Downloads/Images/test_image2.jpg ]; then
+            echo "Test image2 was not moved to Images directory!" && exit 1
+          fi
+          if [ ! -f ./Downloads/Documents/sample.txt ]; then
+            echo "Sample text file was not moved to Documents directory!" && exit 1
+          fi
+          if [ ! -f ./Downloads/Documents/sample.pdf ]; then
+            echo "Sample PDF was not moved to Documents directory!" && exit 1
           fi
           echo "Files moved successfully!"
 
