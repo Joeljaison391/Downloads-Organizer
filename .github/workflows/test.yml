@@ -1,0 +1,50 @@
+name: Test Rust Application
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install Dependencies
+        run: sudo apt-get install -y wget
+
+      - name: Create Downloads Directory
+        run: mkdir -p ./Downloads
+
+      - name: Build Application
+        run: cargo build --release
+
+      - name: Run Application
+        run: cargo run --release
+
+      - name: Download Test Files
+        run: |
+          wget -P ./Downloads https://via.placeholder.com/150 -O ./Downloads/test_image.jpg
+          wget -P ./Downloads https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4 -O ./Downloads/test_video.mp4
+
+      - name: Verify Files Moved
+        run: |
+          if [ ! -f ./Downloads/Images/test_image.jpg ]; then
+            echo "Test image was not moved to Images directory!" && exit 1
+          fi
+          if [ ! -f ./Downloads/Videos/test_video.mp4 ]; then
+            echo "Test video was not moved to Videos directory!" && exit 1
+          fi
+          echo "Files moved successfully!"
+
