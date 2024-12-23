@@ -1,5 +1,5 @@
 use sysinfo::{System, SystemExt, ProcessExt};
-use std::process::{Command};
+use std::process::Command;
 use std::{thread, time};
 
 fn main() {

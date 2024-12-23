@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         continue; // Skip unused folder events
                     }
 
-                    if let Err(e) = handle_file_event(path, &downloads_folder, &unused_folder) {
+                    if let Err(e) = handle_file_event(path, &downloads_folder) {
                         log_error(&e.to_string());
                         eprintln!("Error handling file: {}", e);
                     }
@@ -88,13 +88,13 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 }
 
 fn is_new_week(report_status_file: &Path) -> bool {
-    let today = Local::now().date();
+    let today = Local::now().date_naive();
     let week_start = today - chrono::Duration::days(today.weekday().num_days_from_sunday() as i64);
 
     if report_status_file.exists() {
         let data = fs::read_to_string(report_status_file).unwrap_or_default();
         if let Ok(last_generated) = data.parse::<chrono::NaiveDate>() {
-            return last_generated < week_start.naive_local();
+            return last_generated < week_start;
         }
     }
 
@@ -102,11 +102,11 @@ fn is_new_week(report_status_file: &Path) -> bool {
 }
 
 fn update_report_status(report_status_file: &Path) {
-    let today = Local::now().date();
+    let today = Local::now().date_naive();
     fs::write(report_status_file, today.format("%Y-%m-%d").to_string()).unwrap();
 }
 
-fn handle_file_event(path: &Path, downloads_folder: &Path, unused_folder: &Path) -> Result<(), std::io::Error> {
+fn handle_file_event(path: &Path, downloads_folder: &Path) -> Result<(), std::io::Error> {
     if !path.is_file() {
         return Ok(()); // Skip directories or non-files
     }
