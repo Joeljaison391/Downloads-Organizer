@@ -1,5 +1,5 @@
 [package]
-name = "downloadManager"
+name = "download_manager"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,6 +9,8 @@ notify = "5.0"
 dirs = "4.0"
 chrono = "0.4"
 notify-rust = "4.5"
+zip = { version = "2.2.2", features = ["deflate"] }
+
 
 [[bin]]
 name = "downloadManager"
