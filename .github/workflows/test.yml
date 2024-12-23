@@ -29,15 +29,15 @@ jobs:
           mkdir -p ./Downloads
           echo "Created Downloads directory at $(pwd)/Downloads"
 
-      - name: Build Application
+      - name: Build Application (downloadManager)
         run: |
-          cargo build --release
-          echo "Application built successfully."
+          cargo build --release --bin downloadManager
+          echo "Application (downloadManager) built successfully."
 
-      - name: Run Application
+      - name: Run Application in Background
         run: |
-          cargo run --bin downloadManager
-          echo "Application executed successfully."
+          target/release/downloadManager > app.log 2>&1 &
+          echo "Application started in background."
 
       - name: Download Test Files
         run: |
@@ -55,9 +55,18 @@ jobs:
           fi
           echo "Files moved successfully!"
 
+      - name: Stop Background Application
+        run: |
+          pkill -f 'target/release/downloadManager'
+          echo "Background application stopped."
+
       - name: Verify Weekly Report Generation
         run: |
           if [ ! -f ./Downloads/Weekly_Report.html ]; then
             echo "Weekly report was not generated!" && exit 1
           fi
           echo "Weekly report generated successfully!"
+
+      - name: Display Application Logs
+        run: |
+          echo "Displaying application logs:" && cat app.log
