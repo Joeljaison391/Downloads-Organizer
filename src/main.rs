@@ -208,7 +208,8 @@ fn move_file_to_specific_folder(path: &Path, downloads_folder: &Path) -> Result<
 }
 
 fn move_unused_files(path: &Path, unused_folder: &Path) -> Result<(), std::io::Error> {
-    let cutoff_time = SystemTime::now() - Duration::seconds(60).to_std().unwrap();
+    let cutoff_time = SystemTime::now() - Duration::seconds(30 * 24 * 60 * 60).to_std().unwrap();
+
 
     if let Ok(metadata) = fs::metadata(&path) {
         if let Ok(modified) = metadata.modified() {
