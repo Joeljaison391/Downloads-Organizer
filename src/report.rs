@@ -6,7 +6,6 @@ use chrono::Local;
 pub fn generate_html_report(downloads_folder: &Path, report_file: &Path) -> Result<(), std::io::Error> {
     let mut report_content = String::new();
 
-    // Add HTML and CSS for styling
     report_content.push_str(
         r#"
         <!DOCTYPE html>
@@ -72,33 +71,14 @@ pub fn generate_html_report(downloads_folder: &Path, report_file: &Path) -> Resu
         Local::now().format("%A, %B %d, %Y")
     ));
 
-    // Analyze the Downloads folder
     let mut total_size = 0;
     let mut file_counts = HashMap::new();
     let mut file_sizes = HashMap::new();
     let mut unused_count = 0;
     let mut unused_size = 0;
 
-    for entry in fs::read_dir(downloads_folder)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.is_file() {
-            let metadata = fs::metadata(&path)?;
-            let size = metadata.len();
-            total_size += size;
-
-            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("unknown").to_lowercase();
-            *file_counts.entry(ext.clone()).or_insert(0) += 1;
-            *file_sizes.entry(ext).or_insert(0) += size;
-
-            // Check if the file is in the unused folder
-            if path.starts_with(downloads_folder.join("Unused")) {
-                unused_count += 1;
-                unused_size += size;
-            }
-        }
-    }
+    // Analyze the Downloads folder and its subdirectories
+    analyze_folder(downloads_folder, downloads_folder, &mut total_size, &mut file_counts, &mut file_sizes, &mut unused_count, &mut unused_size)?;
 
     report_content.push_str("<h2>Summary</h2>");
     report_content.push_str("<ul>");
@@ -118,12 +98,9 @@ pub fn generate_html_report(downloads_folder: &Path, report_file: &Path) -> Resu
 
     report_content.push_str("</table>");
 
-    // Add charts
     report_content.push_str("<h2>Charts</h2>");
     report_content.push_str(r#"<canvas id="fileTypeChart" width="400" height="400"></canvas>"#);
     report_content.push_str(r#"<canvas id="fileSizeChart" width="400" height="400"></canvas>"#);
-
-    // Add JavaScript for charts
     let file_types: Vec<_> = file_counts.keys().collect();
     let file_counts_data: Vec<_> = file_counts.values().collect();
     let file_sizes_data: Vec<_> = file_sizes.values().map(|size| (*size as f64 / (1024.0 * 1024.0))).collect();
@@ -192,5 +169,38 @@ pub fn generate_html_report(downloads_folder: &Path, report_file: &Path) -> Resu
 
     fs::write(report_file, report_content)?;
     println!("Weekly report generated at {}", report_file.display());
+    Ok(())
+}
+
+fn analyze_folder(
+    base_folder: &Path,
+    folder: &Path,
+    total_size: &mut u64,
+    file_counts: &mut HashMap<String, usize>,
+    file_sizes: &mut HashMap<String, u64>,
+    unused_count: &mut usize,
+    unused_size: &mut u64,
+) -> Result<(), std::io::Error> {
+    for entry in fs::read_dir(folder)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            analyze_folder(base_folder, &path, total_size, file_counts, file_sizes, unused_count, unused_size)?;
+        } else if path.is_file() {
+            let metadata = fs::metadata(&path)?;
+            let size = metadata.len();
+            *total_size += size;
+
+            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("unknown").to_lowercase();
+            *file_counts.entry(ext.clone()).or_insert(0) += 1;
+            *file_sizes.entry(ext).or_insert(0) += size;
+
+            if path.starts_with(base_folder.join("Unused")) {
+                *unused_count += 1;
+                *unused_size += size;
+            }
+        }
+    }
     Ok(())
 }

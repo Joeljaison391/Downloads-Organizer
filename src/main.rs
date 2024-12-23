@@ -11,17 +11,21 @@ use chrono::{Local, Duration, Datelike};
 use report::generate_html_report;
 
 fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let downloads_folder = dirs::download_dir().unwrap_or_else(|| {
-        let fallback = std::env::current_dir().expect("Failed to get current directory").join("Downloads");
-        std::fs::create_dir_all(&fallback).expect("Failed to create fallback Downloads directory");
-        fallback
-    });
+    let downloads_folder = dirs::download_dir().expect("Failed to locate Downloads folder");
     let unused_folder = downloads_folder.join("Unused");
     let report_file = downloads_folder.join("Weekly_Report.html");
     let report_status_file = downloads_folder.join("report_status.txt");
+
     fs::create_dir_all(&unused_folder)?;
 
-    // Check and generate weekly report if it's a new week
+    // Generate initial report if it doesn't exist
+    if !report_file.exists() {
+        println!("Generating initial report...");
+        generate_html_report(&downloads_folder, &report_file)?;
+        println!("Initial report generated: {}", report_file.display());
+    }
+
+    // Generate weekly report if it's a new week
     if is_new_week(&report_status_file) {
         println!("Generating weekly report...");
         generate_html_report(&downloads_folder, &report_file)?;
@@ -29,13 +33,12 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         println!("Weekly report generated: {}", report_file.display());
     }
 
+    // Setup folder monitoring
     let (tx, rx) = channel();
-
     let mut watcher = RecommendedWatcher::new(tx, Config::default()).map_err(|e| {
         eprintln!("Error creating file watcher: {}", e);
         e
     })?;
-
 
     watcher.watch(&downloads_folder, RecursiveMode::Recursive).map_err(|e| {
         eprintln!("Error watching folder: {}", e);
@@ -47,16 +50,14 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut last_scan = Instant::now();
 
     for event in rx {
-        // Log the elapsed time every loop iteration
         let elapsed = last_scan.elapsed().as_secs();
         println!("Elapsed time since last scan: {} seconds", elapsed);
 
         match event {
             Ok(event) => {
                 if let Some(path) = event.paths.first() {
-                    // Skip events for files inside the Unused folder
                     if path.starts_with(&unused_folder) {
-                        continue;
+                        continue; // Skip unused folder events
                     }
 
                     if let Err(e) = handle_file_event(path, &downloads_folder, &unused_folder) {
@@ -69,7 +70,6 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 eprintln!("File watcher error: {}", e);
             }
         }
-
 
         if elapsed >= 60 {
             println!("Starting periodic scan for unused files...");
@@ -98,7 +98,7 @@ fn is_new_week(report_status_file: &Path) -> bool {
         }
     }
 
-    true // If the file doesn't exist, assume it's a new week
+    true
 }
 
 fn update_report_status(report_status_file: &Path) {
@@ -126,11 +126,9 @@ fn handle_file_event(path: &Path, downloads_folder: &Path, unused_folder: &Path)
         match fs::metadata(path) {
             Ok(metadata) => {
                 let current_size = metadata.len();
-
                 if current_size == prev_size {
                     break;
                 }
-
                 prev_size = current_size;
                 println!("Waiting for file stability: {}", path.display());
                 std::thread::sleep(std::time::Duration::from_secs(1));
@@ -146,7 +144,6 @@ fn handle_file_event(path: &Path, downloads_folder: &Path, unused_folder: &Path)
         }
     }
 
-    // Move the file to its specific folder
     move_file_to_specific_folder(path, downloads_folder)?;
 
     Ok(())
@@ -157,13 +154,11 @@ fn handle_unused_files_recursively(downloads_folder: &Path, unused_folder: &Path
         let entry = entry?;
         let path = entry.path();
 
-        // Skip the `Unused` directory
         if path == *unused_folder {
             continue;
         }
 
         if path.is_dir() {
-            // Recurse into subdirectories
             handle_unused_files_recursively(&path, unused_folder)?;
         } else if path.is_file() {
             println!("Checking file for unused status: {}", path.display());
@@ -180,8 +175,7 @@ fn move_file_to_specific_folder(path: &Path, downloads_folder: &Path) -> Result<
             "jpg" | "png" | "gif" | "bmp" | "tiff" | "svg" | "webp" => "Images",
             "mp4" | "mkv" | "avi" | "mov" | "flv" | "wmv" | "webm" | "mpeg" => "Videos",
             "pdf" | "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx" | "txt" | "csv" => "Documents",
-            "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" | "xz" | "iso" | "dmg" => "Archives",
-            "mp3" | "wav" | "aac" | "flac" | "ogg" | "wma" | "m4a" => "Audio",
+            "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" | "xz" => "Archives",
             _ => "Others",
         },
         None => "Others",
@@ -208,8 +202,7 @@ fn move_file_to_specific_folder(path: &Path, downloads_folder: &Path) -> Result<
 }
 
 fn move_unused_files(path: &Path, unused_folder: &Path) -> Result<(), std::io::Error> {
-    let cutoff_time = SystemTime::now() - Duration::seconds(30 * 24 * 60 * 60).to_std().unwrap();
-
+    let cutoff_time = SystemTime::now() - Duration::days(30).to_std().unwrap();
 
     if let Ok(metadata) = fs::metadata(&path) {
         if let Ok(modified) = metadata.modified() {
@@ -218,9 +211,8 @@ fn move_unused_files(path: &Path, unused_folder: &Path) -> Result<(), std::io::E
                     Some(ext) => match ext.to_lowercase().as_str() {
                         "jpg" | "png" | "gif" | "bmp" | "tiff" | "svg" | "webp" => "Images",
                         "mp4" | "mkv" | "avi" | "mov" | "flv" | "wmv" | "webm" | "mpeg" => "Videos",
-                        "pdf" | "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx" | "txt" | "csv" => "Documents",
-                        "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" | "xz" | "iso" | "dmg" => "Archives",
-                        "mp3" | "wav" | "aac" | "flac" | "ogg" | "wma" | "m4a" => "Audio",
+                        "pdf" | "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx" => "Documents",
+                        "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" | "xz" => "Archives",
                         _ => "Others",
                     },
                     None => "Others",
