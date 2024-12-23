@@ -1,0 +1,33 @@
+name: Build and Upload Executable
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Build Executable (downloadManager)
+        run: |
+          cargo build --release --bin downloadManager
+          echo "Application (downloadManager) built successfully."
+
+      - name: Upload Executable Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: downloadManager-executable
+          path: target/release/downloadManager
