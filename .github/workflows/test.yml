@@ -31,7 +31,7 @@ jobs:
         run: cargo build --release
 
       - name: Run Application
-        run: cargo run --release
+        run: cargo run --bin downloadManager --release
 
       - name: Download Test Files
         run: |
