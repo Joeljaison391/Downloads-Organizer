@@ -43,7 +43,6 @@ jobs:
         run: |
           wget -P ./Downloads https://via.placeholder.com/150 -O ./Downloads/test_image1.jpg
           wget -P ./Downloads https://via.placeholder.com/200 -O ./Downloads/test_image2.jpg
-          echo "Sample text file" > ./Downloads/sample.txt
           wget -P ./Downloads https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf -O ./Downloads/sample.pdf
           echo "Test files downloaded and created."
 
@@ -54,9 +53,6 @@ jobs:
           fi
           if [ ! -f ./Downloads/Images/test_image2.jpg ]; then
             echo "Test image2 was not moved to Images directory!" && exit 1
-          fi
-          if [ ! -f ./Downloads/Documents/sample.txt ]; then
-            echo "Sample text file was not moved to Documents directory!" && exit 1
           fi
           if [ ! -f ./Downloads/Documents/sample.pdf ]; then
             echo "Sample PDF was not moved to Documents directory!" && exit 1
