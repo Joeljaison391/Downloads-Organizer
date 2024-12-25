@@ -1,6 +1,12 @@
 # Download Manager
+<p align="center">
+  <img src="https://res.cloudinary.com/dxraggwp4/image/upload/v1735143608/DownloadOrganizer/pcholwjlzqhit0fn5yb0.png" alt="Logo" width="600" height="350">
+</p>
 
 ## Overview
+<p align="left">
+  <img src="https://res.cloudinary.com/dxraggwp4/image/upload/v1735143605/DownloadOrganizer/dkcvtkacj4rqh6bhtbnq.png" alt="Banner" width="100">
+</p>
 A lightweight Rust-based file monitoring and organizing tool designed to automatically segregate files downloaded into appropriate folders based on their type. The program monitors the **Downloads** folder for file events and organizes files into categories like Images, Videos, Documents, Archives, Audio, and Others.
 
 ## Features
